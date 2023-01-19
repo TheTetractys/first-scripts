@@ -1,0 +1,36 @@
+import math
+from scipy.stats import norm
+from plotnine import *
+import pandas as pd
+
+#p is the population proportion, so for an even 50/50 coin = 0.5
+#n is the sample size, or number of events being observed
+#k is the number of success from the n sample size
+
+def binomial_at_least(n, k, p):
+    probability = 0
+    for i in range(k, n+1):
+        probability += math.comb(n, i) * (p**i) * ((1-p)**(n-i))
+    return probability
+    
+def umi_base_consensus_majority_ratio(n,k):
+    #n represents the average consensus family size
+    #k represents the most common base at any particular position
+    return k/(n-k)
+
+Count = 43
+FamSize = 75
+
+def plot_binomial_at_least(n, k, p):
+    df = pd.DataFrame({'x': range(n+1), 'y': [math.comb(n, i) * (p**i) * ((1-p)**(n-i)) for i in range(n+1)], 'color': [i >= k for i in range(n+1)]})
+    gg = (ggplot(df)
+        + aes(x='x', y='y', fill='factor(color)')) + geom_bar(stat='identity') + ggtitle(f"Binomial Distribution for n={n}, p={p}, k={k}")
+    print(gg)
+
+plot_binomial_at_least(n=FamSize, k=Count, p=0.5)
+
+ratio = umi_base_consensus_majority_ratio(FamSize,Count)
+prob_binomial = binomial_at_least(FamSize, Count, 0.5)
+#print(f'Probability of calling a deami at least {Count} heads in {FamSize} flips: {prob_binomial*100} %')
+
+print(f'With a umi-base-consensus-majority-ratio set at {ratio} for a sample with an average family size of {FamSize}, the probability of  keeping a base with a deamination event is {prob_binomial*100} %')
