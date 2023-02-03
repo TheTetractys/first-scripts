@@ -1,0 +1,132 @@
+import pandas as pd
+import openpyxl
+import tkinter as tk
+from tkinter import filedialog
+
+# Create a Tkinter root window
+root = tk.Tk()
+
+# Hide the root window
+root.withdraw()
+
+# Open the file selection dialog
+file_path = filedialog.askopenfilename()
+    
+# Read the CSV file into a DataFrame
+df = pd.read_csv(file_path)
+
+# Rename the columns
+df = df.rename(columns={"Name": "Sample/Name"})
+df = df.rename(columns={"Box": "Container/Name"})
+df = df.rename(columns={"Sample ID": "UDF/Parent Inventory ID"})
+df = df.rename(columns={"Supplier": "UDF/Supplier"})
+df = df.rename(columns={"Custodian Name": "UDF/Custodian Name"})
+df = df.rename(columns={"Genetic Testing Consent": "UDF/Genetic Testing Consent"})
+df = df.rename(columns={"BARCODE": "UDF/Sample Barcode"})
+df = df.rename(columns={"Patient ID": "UDF/Patient ID"})
+df = df.rename(columns={"Study Code/ID": "UDF/Study Code\/ID"})
+df = df.rename(columns={"Container Type": "Container/Type"})
+df = df.rename(columns={"Position": "Sample/Well Location"})
+df = df.rename(columns={"Receipt Date": "UDF/Received Date"})
+df = df.rename(columns={"Age": "UDF/Age"})
+df = df.rename(columns={"Sex": "UDF/Sex"})
+df = df.rename(columns={"BioSample Type": "UDF/BioSample Type"})
+df = df.rename(columns={"Race": "UDF/Patient Ethnicity"})
+df = df.rename(columns={"Collection Date": "UDF/Collection Date"})
+df = df.rename(columns={"Shipment/Order/Requisition Number": "UDF/Requisition\/Order\/Shipment"})
+df = df.rename(columns={"Description": "UDF/Comment"})
+df = df.rename(columns={"BioSample Amount": "UDF/BioSample Amount"})
+df = df.rename(columns={"BioSample Amount Unit": "UDF/BioSample Amount Unit"})
+df = df.rename(columns={"Expiration": "UDF/Expiration Date"})
+df = df.rename(columns={"Cancer Stage": "UDF/Cancer Stage"})
+df = df.rename(columns={"Cancer Subtype": "UDF/Cancer Subtype"})
+df = df.rename(columns={"Cancer Type": "UDF/Cancer Type"})
+df = df.rename(columns={"ER Status": "UDF/ER Status"})
+df = df.rename(columns={"HER2 Status": "UDF/HER2 Status"})
+df = df.rename(columns={"PR Status": "UDF/PR Status"})
+df = df.rename(columns={"Normal/Disease": "UDF/Normal\/Disease"})
+df = df.rename(columns={"Tissue of Origin": "UDF/Tissue of Origin"})
+df = df.rename(columns={"Treatment Description": "UDF/Treatment Description"})
+df = df.rename(columns={"Treatment Response (RECIST)": "UDF/Treatment Response"})
+df = df.rename(columns={"Visit Name": "UDF/Visit Name"})
+
+# if sample container is a tube/slide/cassette/block then container name needs to be changed from the box to the tube name, clarity cannot handle the distinction
+# if sample is in a 96 well plate, container type name needs reformatting
+for i, row in df.iterrows():
+    if row['Container/Type'] == 'Tube' or row['Container/Type'] == 'Slide' or row['Container/Type'] == 'Cassette' or row['Container/Type'] == 'Block':
+        df.at[i, 'Container/Name'] = row['UDF/Sample Barcode']
+        df.at[i, 'Sample/Well Location'] = '1'
+    elif row['Container/Type'] == 'Well (Plate)':
+        df.at[i, 'Container/Type'] = '96 well plate'
+
+#reformat the received date to yyyy-mm-dd
+df['UDF/Received Date'] = pd.to_datetime(df['UDF/Received Date'], format='%m/%d/%Y')
+df['UDF/Received Date'] = df['UDF/Received Date'].dt.strftime('%Y-%m-%d')
+#reformat the collection date to yyyy-mm-dd
+df['UDF/Collection Date'] = pd.to_datetime(df['UDF/Collection Date'], format='%m/%d/%Y')
+df['UDF/Collection Date'] = df['UDF/Collection Date'].dt.strftime('%Y-%m-%d')
+#reformat the expiration date to yyyy-mm-dd
+df['UDF/Expiration Date'] = pd.to_datetime(df['UDF/Expiration Date'], format='%m/%d/%Y')
+df['UDF/Expiration Date'] = df['UDF/Expiration Date'].dt.strftime('%Y-%m-%d')
+        
+df['Sample/Well Location'] = df['Sample/Well Location'].astype(str)
+df['Sample/Well Location'] = df['Sample/Well Location'].str.replace(' / ', ':')
+df['Sample/Well Location'] = df['Sample/Well Location'].str.strip()
+
+# Select only the specific columns for Clarity LIMS upload
+dfselect = df[[
+    "Sample/Name",
+    "Container/Name",
+    "UDF/Parent Inventory ID",
+    "UDF/Supplier",
+    "UDF/Custodian Name",
+    "UDF/Genetic Testing Consent",
+    "UDF/Sample Barcode",
+    "UDF/Patient ID",
+    "UDF/Study Code\/ID",
+    "Container/Type",
+    "Sample/Well Location",
+    "UDF/Received Date",
+    "UDF/Age",
+    "UDF/Sex",
+    "UDF/BioSample Type",
+    "UDF/Patient Ethnicity",
+    "UDF/Collection Date",
+    "UDF/Requisition\/Order\/Shipment",
+    "UDF/Comment",
+    "UDF/BioSample Amount",
+    "UDF/BioSample Amount Unit",
+    "UDF/Expiration Date",
+    "UDF/Cancer Stage",
+    "UDF/Cancer Subtype",
+    "UDF/Cancer Type",
+    "UDF/ER Status",
+    "UDF/HER2 Status",
+    "UDF/PR Status",
+    "UDF/Normal\/Disease",
+    "UDF/Tissue of Origin",
+    "UDF/Treatment Description",
+    "UDF/Treatment Response",
+    "UDF/Visit Name"
+]]
+
+# add the sample entries separator
+dfselect = pd.concat([pd.DataFrame(["<SAMPLE ENTRIES>"], columns=['Sample/Name']), dfselect])
+dfselect = pd.concat([pd.DataFrame(["</TABLE HEADER>"], columns=['Sample/Name']), dfselect])
+dfselect = pd.concat([dfselect, pd.DataFrame(["</SAMPLE ENTRIES>"], columns=['Sample/Name'])])
+
+# write the dataframe to an excel file
+dfselect.to_excel('FPtoCLIMS.xlsx', index=False)
+
+# open the excel file with openpyxl
+workbook = openpyxl.load_workbook('FPtoCLIMS.xlsx')
+worksheet = workbook.active
+
+# insert a new row at the top
+worksheet.insert_rows(1)
+
+# write the value "<TABLE HEADER>" to cell A1
+worksheet['A1'] = "<TABLE HEADER>"
+
+# save the workbook
+workbook.save('FPtoCLIMS.xlsx')
