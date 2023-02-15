@@ -139,3 +139,17 @@ worksheet['A1'] = "<TABLE HEADER>"
 
 # save the workbook
 workbook.save('FPtoCLIMS.xlsx')
+
+from tkinter import messagebox
+
+# Create tkinter window
+root = tk.Tk()
+
+# Hide the main window
+root.withdraw()
+
+# Show the message box
+messagebox.showinfo("FPtoCLIMSv4.1", "The Clarity LIMS import file was generated in the same directory as the FPtoCLIMSv4.1.exe")
+
+# Exit the program
+root.destroy()
