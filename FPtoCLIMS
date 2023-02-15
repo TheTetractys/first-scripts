@@ -15,10 +15,19 @@ file_path = filedialog.askopenfilename()
 # Read the CSV file into a DataFrame
 df = pd.read_csv(file_path)
 
+# define the old and new column names, allows for both ways that FreezerPro Exports the UID/SampleID
+old_col_names = ['Sample ID', 'UID']
+new_col_name = 'UDF/Parent Inventory ID'
+
+# check if the old column names exist in the dataframe
+if any(col in df.columns for col in old_col_names):
+    # rename the columns
+    df = df.rename(columns={col: new_col_name for col in old_col_names})
+
 # Rename the columns
 df = df.rename(columns={"Name": "Sample/Name"})
 df = df.rename(columns={"Box": "Container/Name"})
-df = df.rename(columns={"Sample ID": "UDF/Parent Inventory ID"})
+#df = df.rename(columns={"Sample ID": "UDF/Parent Inventory ID"})
 df = df.rename(columns={"Supplier": "UDF/Supplier"})
 df = df.rename(columns={"Custodian Name": "UDF/Custodian Name"})
 df = df.rename(columns={"Genetic Testing Consent": "UDF/Genetic Testing Consent"})
