@@ -23,6 +23,9 @@ if any(col in df.columns for col in old_col_names):
     # rename the columns
     df = df.rename(columns={col: new_col_name for col in old_col_names})
 
+# Use the replace function on the entire DataFrame to remove commas
+df = df.replace(',',' -', regex=True)
+
 #add a new column with sequential labels, this enables sample pooling in clarity lims
 df["Sample/Reagent Label"] = df.apply(lambda row: 's{:03d}'.format(row.name), axis=1)
 
