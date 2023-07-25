@@ -1,5 +1,4 @@
 import pandas as pd
-import openpyxl
 import tkinter as tk
 from tkinter import filedialog
 
@@ -24,10 +23,12 @@ if any(col in df.columns for col in old_col_names):
     # rename the columns
     df = df.rename(columns={col: new_col_name for col in old_col_names})
 
+#add a new column with sequential labels, this enables sample pooling in clarity lims
+df["Sample/Reagent Label"] = df.apply(lambda row: 's{:03d}'.format(row.name), axis=1)
+
 # Rename the columns
 df = df.rename(columns={"Name": "Sample/Name"})
 df = df.rename(columns={"Box": "Container/Name"})
-#df = df.rename(columns={"Sample ID": "UDF/Parent Inventory ID"})
 df = df.rename(columns={"Supplier": "UDF/Supplier"})
 df = df.rename(columns={"Custodian Name": "UDF/Custodian Name"})
 df = df.rename(columns={"Genetic Testing Consent": "UDF/Genetic Testing Consent"})
@@ -39,7 +40,7 @@ df = df.rename(columns={"Position": "Sample/Well Location"})
 df = df.rename(columns={"Receipt Date": "UDF/Received Date"})
 df = df.rename(columns={"Age": "UDF/Age"})
 df = df.rename(columns={"Sex": "UDF/Sex"})
-df = df.rename(columns={"BioSample Type": "UDF/BioSample Type"})
+df = df.rename(columns={"BioSample Subtype": "UDF/BioSample Type"})
 df = df.rename(columns={"Race": "UDF/Patient Ethnicity"})
 df = df.rename(columns={"Collection Date": "UDF/Collection Date"})
 df = df.rename(columns={"Shipment/Order/Requisition Number": "UDF/Requisition\/Order\/Shipment"})
@@ -58,9 +59,13 @@ df = df.rename(columns={"Tissue of Origin": "UDF/Tissue of Origin"})
 df = df.rename(columns={"Treatment Description": "UDF/Treatment Description"})
 df = df.rename(columns={"Treatment Response (RECIST)": "UDF/Treatment Response"})
 df = df.rename(columns={"Visit Name": "UDF/Visit Name"})
+df = df.rename(columns={"Processing Date": "UDF/Processing Date"})
+df = df.rename(columns={"BioSample Concentration": "UDF/BioSample Concentration"})
+df = df.rename(columns={"BioSample Concentration Unit": "UDF/BioSample Concentration Unit"})
+df = df.rename(columns={"Biobank Shipment Request (SR#)": "UDF/Biobank Shipment Request (SR#)"})
 
 # if sample container is a tube/slide/cassette/block then container name needs to be changed from the box to the tube name, clarity cannot handle the distinction
-# if sample is in a 96 well plate, container type name needs reformatting
+# update the values in column B based on the values in column A
 for i, row in df.iterrows():
     if row['Container/Type'] == 'Tube' or row['Container/Type'] == 'Slide' or row['Container/Type'] == 'Cassette' or row['Container/Type'] == 'Block':
         df.at[i, 'Container/Name'] = row['UDF/Sample Barcode']
@@ -77,15 +82,20 @@ df['UDF/Collection Date'] = df['UDF/Collection Date'].dt.strftime('%Y-%m-%d')
 #reformat the expiration date to yyyy-mm-dd
 df['UDF/Expiration Date'] = pd.to_datetime(df['UDF/Expiration Date'], format='%m/%d/%Y')
 df['UDF/Expiration Date'] = df['UDF/Expiration Date'].dt.strftime('%Y-%m-%d')
+#reformat the processing date to yyyy-mm-dd
+df['UDF/Processing Date'] = pd.to_datetime(df['UDF/Processing Date'], format='%m/%d/%Y')
+df['UDF/Processing Date'] = df['UDF/Processing Date'].dt.strftime('%Y-%m-%d')
+        
         
 df['Sample/Well Location'] = df['Sample/Well Location'].astype(str)
 df['Sample/Well Location'] = df['Sample/Well Location'].str.replace(' / ', ':')
 df['Sample/Well Location'] = df['Sample/Well Location'].str.strip()
 
-# Select only the specific columns for Clarity LIMS upload
+# Select only the specific columns for Clarity LIMS
 dfselect = df[[
     "Sample/Name",
     "Container/Name",
+    "Sample/Reagent Label",
     "UDF/Parent Inventory ID",
     "UDF/Supplier",
     "UDF/Custodian Name",
@@ -116,13 +126,19 @@ dfselect = df[[
     "UDF/Tissue of Origin",
     "UDF/Treatment Description",
     "UDF/Treatment Response",
-    "UDF/Visit Name"
+    "UDF/Visit Name",
+    "UDF/Processing Date",
+    "UDF/BioSample Concentration",
+    "UDF/BioSample Concentration Unit",
+    "UDF/Biobank Shipment Request (SR#)"
 ]]
 
-# add the sample entries separator
+# add the sample entries
 dfselect = pd.concat([pd.DataFrame(["<SAMPLE ENTRIES>"], columns=['Sample/Name']), dfselect])
 dfselect = pd.concat([pd.DataFrame(["</TABLE HEADER>"], columns=['Sample/Name']), dfselect])
 dfselect = pd.concat([dfselect, pd.DataFrame(["</SAMPLE ENTRIES>"], columns=['Sample/Name'])])
+
+import openpyxl
 
 # write the dataframe to an excel file
 dfselect.to_excel('FPtoCLIMS.xlsx', index=False)
@@ -149,7 +165,7 @@ root = tk.Tk()
 root.withdraw()
 
 # Show the message box
-messagebox.showinfo("FPtoCLIMSv4.1", "The Clarity LIMS import file was generated in the same directory as the FPtoCLIMSv4.1.exe")
+messagebox.showinfo("FPtoCLIMSv6", "The Clarity LIMS import file was generated in the same directory as the FPtoCLIMSv6.exe")
 
 # Exit the program
 root.destroy()
